@@ -42,11 +42,16 @@ export const LISTS_VIEWS = true;
 export const SHAREPOINT_ROOT_HOST = LISTS_VIEWS ? required("SHAREPOINT_ROOT_HOST") : process.env.SHAREPOINT_ROOT_HOST;
 export const spScope = (host) => `https://${host}/AllSites.Manage`;
 
+// Calendar: Calendars.ReadWrite. Off until the permission is added in the app registration.
+// Note: that permission can technically send invites; the calendar tools never do (see tools/calendar.js).
+export const CALENDAR = true;
+
 const DEFAULT_SCOPES = [
   "Notes.ReadWrite.All",
   "Mail.ReadWrite",
   "Chat.Read",
   "Sites.ReadWrite.All",
+  ...(CALENDAR ? ["Calendars.ReadWrite"] : []),
   ...(TEAMS_CHANNELS ? ["Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All"] : []),
   ...(LISTS_MANAGE ? ["Sites.Manage.All"] : []),
 ];
