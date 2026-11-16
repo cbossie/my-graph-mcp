@@ -46,12 +46,24 @@ export const spScope = (host) => `https://${host}/AllSites.Manage`;
 // Note: that permission can technically send invites; the calendar tools never do (see tools/calendar.js).
 export const CALENDAR = true;
 
+// Planner: Tasks.ReadWrite (plans/buckets/tasks) + Group.Read.All (plans live in Microsoft 365 groups:
+// group names, group plans, and member names for assignees). Group.Read.All needs admin consent.
+// Turn off if those permissions are not granted in the app registration.
+export const PLANNER = true;
+// Planner assignee names and email -> user id lookups need User.ReadBasic.All, and listing your groups'
+// plans needs User.Read (/me/memberOf). Neither needs admin consent.
+// Without them, assignees are shown as user ids and must be given as ids.
+export const PLANNER_USER_NAMES = true;
+
 const DEFAULT_SCOPES = [
   "Notes.ReadWrite.All",
   "Mail.ReadWrite",
   "Chat.Read",
   "Sites.ReadWrite.All",
   ...(CALENDAR ? ["Calendars.ReadWrite"] : []),
+  ...(PLANNER ? ["Tasks.ReadWrite", "Group.Read.All"] : []),
+  // User.Read: /me/memberOf (so planner_list_plans can find your groups' plans).
+  ...(PLANNER && PLANNER_USER_NAMES ? ["User.Read", "User.ReadBasic.All"] : []),
   ...(TEAMS_CHANNELS ? ["Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All"] : []),
   ...(LISTS_MANAGE ? ["Sites.Manage.All"] : []),
 ];
