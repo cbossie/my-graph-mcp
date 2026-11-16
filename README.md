@@ -10,6 +10,7 @@ A local [MCP](https://modelcontextprotocol.io) server for Microsoft Graph, writt
 | **Mail** | `mail_create_draft` (drafts only, never sends) |
 | **Teams** | `teams_list_chats`, `teams_get_chat_messages` (read-only). Optional channel tools: `teams_list_teams`, `teams_list_channels`, `teams_get_channel_messages` |
 | **Calendar** (optional, `CALENDAR` switch) | `calendar_list_calendars`, `calendar_list_events`, `calendar_get_event`, `calendar_create_event`, `calendar_update_event`, `calendar_delete_event`. No attendee options, and no send/accept/decline tools: see below |
+| **Planner** (optional, `PLANNER` switch) | `planner_list_plans`, `planner_get_plan`, `planner_list_buckets`, `planner_list_tasks`, `planner_list_my_tasks`, `planner_get_task`, `planner_create_task`, `planner_update_task`, `planner_complete_task`. No delete tools |
 | **Lists** (Microsoft Lists / SharePoint) | `lists_get_list`, `lists_get_columns`, `lists_create_item`, `lists_get_item`, `lists_update_item`, `lists_delete_item` (requires `confirm: true`), `lists_query_items`. Optional: `lists_create_list`, `lists_add_column`, `lists_update_column`, `lists_get_views`, `lists_create_view` |
 
 Lists default to your personal OneDrive site; pass `site` (a site URL) to use another.
@@ -48,11 +49,16 @@ Optional features are off by default. Add the permission in your app registratio
 | Switch (`src/auth.js`) | Enables | Extra permission |
 |---|---|---|
 | `CALENDAR` | Calendar tools | Graph: `Calendars.ReadWrite` |
+| `PLANNER` | Planner tools | Graph: `Tasks.ReadWrite`, `Group.Read.All` (admin consent) |
+| `PLANNER_USER_NAMES` | Planner assignee names, email → user id lookups, your groups' plans in `planner_list_plans` | Graph: `User.ReadBasic.All`, `User.Read` |
 | `TEAMS_CHANNELS` | Teams channel tools | Graph: `Team.ReadBasic.All`, `Channel.ReadBasic.All`, `ChannelMessage.Read.All` (admin consent) |
 | `LISTS_MANAGE` | `lists_create_list`, `lists_add_column`, `lists_update_column` | Graph: `Sites.Manage.All` |
 | `LISTS_VIEWS` | `lists_get_views`, `lists_create_view`, and hyperlink columns/values | SharePoint (Office 365 SharePoint Online): `AllSites.Manage` |
 
 Microsoft Graph has no API for list views and can't create, label or write URL (hyperlink) columns, so those features call SharePoint REST with a separate token.
+
+## Planner
+Plans take an id or a full Planner URL (the id is the segment after `/plan/`). The tools handle Planner's etags themselves: each update reads the current `@odata.etag`, PATCHes with `If-Match`, and retries once on a conflict (Planner reports a stale etag as 412 or 409). The task and its details (description, checklist, links) are separate resources, so an update may PATCH both. Due and start dates are `YYYY-MM-DD`, stored as 12:00 UTC that day, so the date reads the same for anyone between UTC−11 and UTC+11; dates are read back in `PLANNER_TIME_ZONE` (default `CALENDAR_TIME_ZONE`, else the system time zone). Priority accepts urgent / important / medium / low (1 / 3 / 5 / 9); progress is normalised to 0 / 50 / 100. Assignees can be given as user ids, emails or `me`. Without `PLANNER_USER_NAMES`, Graph returns no names for users, so assignees show as ids and must be given as ids or `me`. Graph's `/me/planner/plans` mostly returns Teams-meeting (roster) plans, so `planner_list_plans` also adds the plans of your groups and any plan holding a task assigned to you.
 
 ## Calendar and invites
 Microsoft Graph has no draft event: creating or changing an event that has attendees emails them at once, and `Calendars.ReadWrite` has no variant that prevents it. So the server enforces it instead: the calendar tools take no attendees, there are no accept/decline tools, and updating or deleting an event is refused when anyone besides you is on it. To invite people, create the event here and add attendees in Outlook, where you press Send. The default time zone for tools is `CALENDAR_TIME_ZONE` (optional, in `.env`) or the system time zone.
@@ -65,7 +71,7 @@ Read from `.env` (git-ignored; see `.env.example`) or from real environment vari
 |---|---|
 | `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID` | Required |
 | `SHAREPOINT_ROOT_HOST` | Required when `LISTS_VIEWS` is on, e.g. `contoso.sharepoint.com` |
-| `GRAPH_SCOPES`, `GRAPH_TOKEN_CACHE`, `CALENDAR_TIME_ZONE` | Optional overrides |
+| `GRAPH_SCOPES`, `GRAPH_TOKEN_CACHE`, `CALENDAR_TIME_ZONE`, `PLANNER_TIME_ZONE` | Optional overrides |
 
 ## Adding a Graph feature
 

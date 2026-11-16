@@ -16,7 +16,15 @@ export async function request(method, path, { params, json, body, headers } = {}
 
   const res = await fetch(url, { method, headers: hdrs, body: payload });
   const text = await res.text();
-  if (!res.ok) throw new Error(`Graph ${res.status} on ${method} ${path}: ${text.slice(0, 1000)}`);
+  if (!res.ok) {
+    // request-id is what Microsoft support asks for; status lets callers react (e.g. Planner's 412).
+    const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
+    const err = new Error(
+      `Graph ${res.status} on ${method} ${path}: ${text.slice(0, 1000)}${requestId ? ` [request-id: ${requestId}]` : ""}`,
+    );
+    Object.assign(err, { status: res.status, requestId });
+    throw err;
+  }
   return (res.headers.get("content-type") ?? "").includes("json") ? JSON.parse(text) : text;
 }
 

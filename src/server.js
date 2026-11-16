@@ -7,9 +7,10 @@ import * as mail from "./tools/mail.js";
 import * as teams from "./tools/teams.js";
 import * as lists from "./tools/lists.js";
 import * as calendar from "./tools/calendar.js";
-import { CALENDAR } from "./auth.js";
+import * as planner from "./tools/planner.js";
+import { CALENDAR, PLANNER } from "./auth.js";
 
-const MODULES = [onenote, mail, teams, lists, ...(CALENDAR ? [calendar] : [])]; // add new areas here (and their scopes in auth.js)
+const MODULES = [onenote, mail, teams, lists, ...(CALENDAR ? [calendar] : []), ...(PLANNER ? [planner] : [])]; // add new areas here (and their scopes in auth.js)
 
 const server = new McpServer({ name: "graph", version: "0.1.0" });
 for (const m of MODULES) m.register(server);
